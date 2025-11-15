@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Circuíto Terê Verde</title>
+  <link rel="stylesheet" href="./styles/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="./src/icon.png" alt="logo" />
+      <h2>Circuito Terê Verde</h2>
+    </div>
+
+    <nav>
+      <a href="#">Contato</a>
+      <a href="#">Eventos</a>
+      <a href="#">Login</a>
+    </nav>
+
+    <div class="search" title="Pesquisar" role="img" aria-label="Pesquisar">
+      <svg viewBox="0 0 24 24" width="32" height="32" focusable="false" style="display:block; shape-rendering:geometricPrecision;">
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+          <circle cx="11" cy="11" r="6"></circle>
+          <path d="M21 21l-4.35-4.35"></path>
+        </g>
+      </svg>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-label="slider">
+      <div class="slide active" style="background-image:url('./src/parnaso4.jpeg')" data-title="Parque Nacional da Serra dos Órgãos"></div>
+      <div class="slide" style="background-image:url('./src/parnaso1.jpeg')" data-title="Cachoeira escondida"></div>
+      <div class="slide" style="background-image:url('./src/parnaso3.jpeg')" data-title="Trilha na mata"></div>
+
+      <div class="overlay"></div>
+
+      <div class="hero-content">
+        <h1 class="title">Parque Nacional da Serra dos Órgãos</h1>
+      </div>
+
+      <button class="arrow left" aria-label="Anterior">
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
+      </button>
+      <button class="arrow right" aria-label="Próximo">
+        <svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"></path></svg>
+      </button>
+
+      <div class="dots"></div>
+    </section>
+  </main>
+
+  <script src="./js/script.js"></script>
+</body>
+</html>

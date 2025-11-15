@@ -1,0 +1,151 @@
+/* ===== Reset e variáveis ===== */
+:root {
+  --accent: #0f6b5a;
+  --white: rgba(255, 255, 255, 0.95);
+}
+* { box-sizing: border-box; }
+body, html {
+  margin: 0;
+  height: 100%;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* ===== Header ===== */
+header {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo img {
+  height: 44px;
+}
+
+.logo h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+nav {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+nav a {
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+.search {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Hero / Slider ===== */
+.hero {
+  position: relative;
+  height: calc(100vh - 72px);
+  min-height: 520px;
+  overflow: hidden;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.slide.active {
+  opacity: 1;
+  transform: scale(1);
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.32) 100%);
+}
+
+/* ===== Título ===== */
+.hero-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.title {
+  color: var(--white);
+  font-size: 48px;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.45);
+  max-width: 90%;
+}
+
+/* ===== Setas ===== */
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  cursor: pointer;
+  border: none;
+}
+.arrow.left { left: 18px; }
+.arrow.right { right: 18px; }
+.arrow svg { width: 24px; height: 24px; fill: #0b3e34; }
+
+/* ===== Dots ===== */
+.dots {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  cursor: pointer;
+}
+.dot.active {
+  background: var(--white);
+}
+
+/* ===== Responsividade ===== */
+@media (max-width: 800px) {
+  .title { font-size: 28px; }
+  header { padding: 0 14px; }
+  .arrow { width: 52px; height: 52px; }
+}
