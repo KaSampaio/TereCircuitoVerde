@@ -400,8 +400,8 @@ nav a {
   height: 479px;
   object-fit: cover;
   display: block;
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
 }
 .fauna-right {
   flex: 0 0 48%;
