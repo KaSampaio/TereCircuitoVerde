@@ -5,6 +5,23 @@ const ADMIN_USER = { email: 'admin@unifeso.com.br', password: 'admin' };
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
+  // If already authenticated, redirect away from login page
+  try {
+    const authRaw = localStorage.getItem('tv_auth');
+    if (authRaw) {
+      const auth = JSON.parse(authRaw);
+      if (auth && auth.role === 'admin') {
+        window.location.href = 'contato.html';
+        return;
+      }
+      if (auth && auth.role === 'user') {
+        window.location.href = 'index.html';
+        return;
+      }
+    }
+  } catch (e) {
+    // ignore parse errors
+  }
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const errorBox = document.getElementById('loginError');
@@ -47,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Basic validation: accept demo user or admin user (front-end demo only)
     if (email.toLowerCase() === ADMIN_USER.email && password === ADMIN_USER.password) {
       try { localStorage.setItem('tv_auth', JSON.stringify({ email: ADMIN_USER.email, role: 'admin' })); } catch (e) {}
-      window.location.href = 'admin.html';
+      // Redirect admin to contato page where editing is available inline
+      window.location.href = 'contato.html';
       return;
     }
 

@@ -202,22 +202,99 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadInitialData() {
-    // contacts
+    // contacts: prefer structured JSON; if only HTML fallback exists, parse it
     const raw = localStorage.getItem('contacts');
     if (raw) {
       try { contacts = JSON.parse(raw); } catch (e) { contacts = []; }
     } else {
       const html = localStorage.getItem('contacts_html');
-      if (html) contacts = [{ name: '', email: '', phone: '', address: '', html }];
+      if (html) {
+        // parse HTML into structured contacts
+        try {
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = html;
+          const nodes = wrapper.querySelectorAll('.contact-card');
+          const parsed = [];
+          if (nodes.length) {
+            nodes.forEach(n => {
+              const nameEl = n.querySelector('h3');
+              const mailEl = n.querySelector('a[href^="mailto:"]');
+              const ps = Array.from(n.querySelectorAll('p'));
+              const phone = ps.length > 0 ? (ps.filter(p => !p.querySelector('a'))[0]?.textContent || '') : '';
+              const address = ps.length > 1 ? (ps.filter(p => !p.querySelector('a'))[1]?.textContent || '') : '';
+              parsed.push({ name: nameEl ? nameEl.textContent.trim() : '', email: mailEl ? (mailEl.getAttribute('href')||'').replace(/^mailto:/,'') : '', phone: phone.trim(), address: address.trim() });
+            });
+          } else {
+            // fallback: try splitting top-level children
+            Array.from(wrapper.children).forEach(n => {
+              if (n.tagName.toLowerCase() === 'div') {
+                const nameEl = n.querySelector('h3');
+                const mailEl = n.querySelector('a[href^="mailto:"]');
+                const ps = Array.from(n.querySelectorAll('p'));
+                const phone = ps.length > 0 ? (ps.filter(p => !p.querySelector('a'))[0]?.textContent || '') : '';
+                const address = ps.length > 1 ? (ps.filter(p => !p.querySelector('a'))[1]?.textContent || '') : '';
+                parsed.push({ name: nameEl ? nameEl.textContent.trim() : '', email: mailEl ? (mailEl.getAttribute('href')||'').replace(/^mailto:/,'') : '', phone: phone.trim(), address: address.trim() });
+              }
+            });
+          }
+          contacts = parsed.length ? parsed : [{ name: '', email: '', phone: '', address: '' }];
+        } catch (e) {
+          contacts = [{ name: '', email: '', phone: '', address: '' }];
+        }
+      }
     }
 
-    // events
+    // events: prefer structured JSON; if only HTML fallback exists, parse it
     const rawE = localStorage.getItem('events');
     if (rawE) {
       try { events = JSON.parse(rawE); } catch (e) { events = []; }
     } else {
       const html = localStorage.getItem('events_html');
-      if (html) events = [{ title: '', date: '', location: '', description: '', html }];
+      if (html) {
+        try {
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = html;
+          const nodes = wrapper.querySelectorAll('.event-card');
+          const parsed = [];
+          if (nodes.length) {
+            nodes.forEach(n => {
+              const titleEl = n.querySelector('h3');
+              const metaEl = n.querySelector('.event-meta');
+              const descEl = n.querySelector('p');
+              // try to split meta into date and location if '—' present
+              let date = '';
+              let location = '';
+              if (metaEl) {
+                const text = metaEl.textContent || '';
+                const parts = text.split('—').map(s => s.trim());
+                date = parts[0] || '';
+                location = parts[1] || '';
+              }
+              parsed.push({ title: titleEl ? titleEl.textContent.trim() : '', date, location, description: descEl ? descEl.textContent.trim() : '' });
+            });
+          } else {
+            Array.from(wrapper.children).forEach(n => {
+              if (n.tagName.toLowerCase() === 'div') {
+                const titleEl = n.querySelector('h3');
+                const metaEl = n.querySelector('.event-meta');
+                const descEl = n.querySelector('p');
+                let date = '';
+                let location = '';
+                if (metaEl) {
+                  const text = metaEl.textContent || '';
+                  const parts = text.split('—').map(s => s.trim());
+                  date = parts[0] || '';
+                  location = parts[1] || '';
+                }
+                parsed.push({ title: titleEl ? titleEl.textContent.trim() : '', date, location, description: descEl ? descEl.textContent.trim() : '' });
+              }
+            });
+          }
+          events = parsed.length ? parsed : [{ title: '', date: '', location: '', description: '' }];
+        } catch (e) {
+          events = [{ title: '', date: '', location: '', description: '' }];
+        }
+      }
     }
   }
 

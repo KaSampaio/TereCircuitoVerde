@@ -502,3 +502,13 @@ nav a {
 .content h1 { color: var(--accent); margin-top:0; }
 .contact-card, .event-card { padding:12px; border-radius:8px; border:1px solid #f0f3f0; background:#fbfffb; margin-bottom:10px; }
 .event-meta { color:#4b6b63; font-size:14px; margin-bottom:6px; }
+
+/* Inline editor controls (public pages for admin) */
+.edit-bar { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.edit-btn { padding:6px 10px; border-radius:8px; border:none; background:#e9f3ef; color:#0a3e33; cursor:pointer; }
+.edit-btn.primary { background: var(--accent); color:#fff; font-weight:700; }
+.inline-actions { margin-top:8px; display:flex; gap:8px; }
+.inline-input { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; }
+.inline-textarea { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; min-height:72px; }
+.card-editing { border:1px dashed #cfeadf; background: #fffefc; }
+.small-muted { font-size:13px; color:#6b8a7f; }
