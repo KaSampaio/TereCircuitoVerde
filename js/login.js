@@ -1,9 +1,7 @@
 // Simple front-end login demo
 // Demo credentials (replace with server-side auth in production)
-const DEMO_USER = {
-  email: 'user@exemplo.com',
-  password: 'senha123'
-};
+const DEMO_USER = { email: 'user@exemplo.com', password: 'senha123' };
+const ADMIN_USER = { email: 'admin@unifeso.com.br', password: 'admin' };
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
@@ -46,21 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Basic validation: compare with demo credentials
-    if (email.toLowerCase() !== DEMO_USER.email || password !== DEMO_USER.password) {
-      showError('E-mail ou senha incorretos. Verifique e tente novamente.');
+    // Basic validation: accept demo user or admin user (front-end demo only)
+    if (email.toLowerCase() === ADMIN_USER.email && password === ADMIN_USER.password) {
+      try { localStorage.setItem('tv_auth', JSON.stringify({ email: ADMIN_USER.email, role: 'admin' })); } catch (e) {}
+      window.location.href = 'admin.html';
       return;
     }
 
-    // Success: mark authenticated (demo) and redirect
-    try {
-      localStorage.setItem('tv_auth', JSON.stringify({ email }));
-    } catch (e) {
-      // ignore
+    if (email.toLowerCase() === DEMO_USER.email && password === DEMO_USER.password) {
+      try { localStorage.setItem('tv_auth', JSON.stringify({ email: DEMO_USER.email, role: 'user' })); } catch (e) {}
+      window.location.href = 'index.html';
+      return;
     }
 
-    // Redirect to index or to a dashboard page
-    window.location.href = 'index.html';
+    showError('E-mail ou senha incorretos. Verifique e tente novamente.');
   });
 
   // Clear error while typing
