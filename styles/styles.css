@@ -503,12 +503,73 @@ nav a {
 .contact-card, .event-card { padding:12px; border-radius:8px; border:1px solid #f0f3f0; background:#fbfffb; margin-bottom:10px; }
 .event-meta { color:#4b6b63; font-size:14px; margin-bottom:6px; }
 
+/* ===== Events hero with decorative background (uses src/BackgroundPlantas.jpg) ===== */
+.events-hero {
+  background-image: url("../src/BackgroundPlantas.jpg");
+  background-size: cover;
+  background-position: center left;
+  padding: 36px 0;
+}
+.events-hero .content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 18px;
+  background: transparent; /* override global .content white background so decorative bg shows */
+}
+.events-hero-label {
+  display: inline-block;
+  background: rgba(234,247,239,0.9);
+  color: #0f6b5a;
+  padding: 8px 14px;
+  border-radius: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 14px;
+}
+.featured-card {
+  position: relative;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  background: rgba(0,0,0,0.18); /* semi-transparent so decorative bg shows through */
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ensure background/media sits behind content */
+.featured-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+
+/* badges and text should be above image */
+.featured-card .badge { position: absolute; left: 12px; top: 12px; background: rgba(255,255,255,0.9); color: #0f6b5a; padding: 6px 10px; border-radius: 6px; font-weight: 700; z-index: 4; }
+
+/* date pill should be above image but below the title */
+.featured-card .date-pill { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,0.6); padding: 8px 10px; border-radius: 8px; font-weight: 700; z-index: 2; }
+
+/* push title up so it doesn't overlap with date-pill; ensure title is on top */
+.featured-card .title { padding: 14px; padding-bottom: 64px; font-size: 20px; font-weight: 700; text-shadow: 0 6px 18px rgba(0,0,0,0.5); position: relative; z-index: 5; }
+
+@media (max-width: 920px) {
+  .featured-grid { grid-template-columns: 1fr; }
+}
+
 /* Inline editor controls (public pages for admin) */
 .edit-bar { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
 .edit-btn { padding:6px 10px; border-radius:8px; border:none; background:#e9f3ef; color:#0a3e33; cursor:pointer; }
 .edit-btn.primary { background: var(--accent); color:#fff; font-weight:700; }
 .inline-actions { margin-top:8px; display:flex; gap:8px; }
+.featured-actions { display:flex; gap:8px; position:absolute; right:10px; top:10px; }
+.featured-actions .edit-btn { margin-left: 6px; }
 .inline-input { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; }
 .inline-textarea { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; min-height:72px; }
 .card-editing { border:1px dashed #cfeadf; background: #fffefc; }
 .small-muted { font-size:13px; color:#6b8a7f; }
+
+/* editor image preview */
+.img-preview { display:block; width:100%; height:120px; object-fit:cover; border-radius:8px; margin:8px 0; border:1px solid #e6efe8; }

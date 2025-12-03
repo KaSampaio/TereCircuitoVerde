@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveEventsToStorage(arr) {
     try {
       localStorage.setItem('events', JSON.stringify(arr));
-      const html = arr.map(ev => `<div class=\"event-card\"><h3>${escapeHtml(ev.title||'')}</h3><div class=\"event-meta\">${escapeHtml(ev.date||'')} ${ev.location? '— '+escapeHtml(ev.location):''}</div><p>${escapeHtml(ev.description||'')}</p></div>`).join('\n');
+      const html = arr.map(ev => `<div class=\"event-card\">${ev.image?`<img src=\"${escapeHtml(ev.image)}\"/>`:''}<h3>${escapeHtml(ev.title||'')}</h3><div class=\"event-meta\">${escapeHtml(ev.date||'')}${ev.location? ' — '+escapeHtml(ev.location):''}</div><p>${escapeHtml(ev.description||'')}</p></div>`).join('\n');
       localStorage.setItem('events_html', html);
     } catch (e) { /* ignore */ }
   }
@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render events with inline edit controls for admin
   const eventsEl = document.getElementById('editable-events');
+  const featuredEl = document.getElementById('featured-events');
   if (eventsEl) {
     let events = [];
     const rawE = localStorage.getItem('events');
@@ -171,10 +172,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderEvents() {
       eventsEl.innerHTML = '';
+      // render featured area if present
+      if (featuredEl) {
+        featuredEl.innerHTML = '';
+        // prefer events explicitly marked as featured; fallback to first 3
+        let featured = events.filter(e => e.featured);
+        if (!featured.length) featured = events.slice(0,3);
+        featured.slice(0,3).forEach((ev) => {
+          const card = document.createElement('div'); card.className = 'featured-card';
+          // if event has an image, render it behind content
+          if (ev.image) {
+            const img = document.createElement('img'); img.src = ev.image; img.alt = ev.title || 'Imagem'; card.appendChild(img);
+          }
+          const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = ev.category || 'Evento';
+          const datePill = document.createElement('div'); datePill.className = 'date-pill'; datePill.textContent = ev.date || '';
+          const title = document.createElement('div'); title.className = 'title'; title.textContent = ev.title || '';
+          card.appendChild(badge); card.appendChild(datePill); card.appendChild(title);
+          if (isAdmin) {
+            const actions = document.createElement('div'); actions.className = 'featured-actions';
+            const idx = events.indexOf(ev);
+            const editBtn = document.createElement('button'); editBtn.className='edit-btn'; editBtn.textContent='Editar'; editBtn.addEventListener('click', () => startEditEvent(idx));
+            const delBtn = document.createElement('button'); delBtn.className='edit-btn'; delBtn.textContent='Remover'; delBtn.addEventListener('click', ()=>{ events.splice(idx,1); saveEventsToStorage(events); renderEvents(); });
+            actions.appendChild(editBtn); actions.appendChild(delBtn); card.appendChild(actions);
+          }
+          featuredEl.appendChild(card);
+        });
+      }
       if (isAdmin) {
         const bar = document.createElement('div'); bar.className = 'edit-bar';
         const addBtn = document.createElement('button'); addBtn.className = 'edit-btn primary'; addBtn.textContent = 'Adicionar Evento';
-        addBtn.addEventListener('click', () => { events.push({ title:'', date:'', location:'', description:'' }); renderEvents(); startEditEvent(events.length-1); });
+        addBtn.addEventListener('click', () => { events.push({ title:'', date:'', location:'', description:'', image:'', featured:false, category:'' }); renderEvents(); startEditEvent(events.length-1); });
         const saveAll = document.createElement('button'); saveAll.className = 'edit-btn'; saveAll.textContent = 'Salvar Alterações';
         saveAll.addEventListener('click', () => { saveEventsToStorage(events); window.location.reload(); });
         bar.appendChild(addBtn); bar.appendChild(saveAll); eventsEl.appendChild(bar);
@@ -209,14 +236,51 @@ document.addEventListener('DOMContentLoaded', () => {
       const titleIn = document.createElement('input'); titleIn.className='inline-input'; titleIn.placeholder='Título'; titleIn.value = current.title||'';
       const dateIn = document.createElement('input'); dateIn.className='inline-input'; dateIn.placeholder='Data (dd/mm/aaaa)'; dateIn.value = current.date||'';
       const locIn = document.createElement('input'); locIn.className='inline-input'; locIn.placeholder='Local'; locIn.value = current.location||'';
+
+      // image URL input (kept for flexibility) and file upload input
+      const imgIn = document.createElement('input'); imgIn.className='inline-input'; imgIn.placeholder='URL da imagem (opcional)'; imgIn.value = current.image||'';
+      const fileIn = document.createElement('input'); fileIn.type = 'file'; fileIn.accept = 'image/*'; fileIn.style.marginTop = '8px';
+      const preview = document.createElement('img'); preview.className = 'img-preview';
+      if (current.image) { preview.src = current.image; preview.style.display = 'block'; }
+
+      // checkbox to mark featured
+      const featuredIn = document.createElement('label'); featuredIn.style.display = 'inline-block'; featuredIn.style.margin = '8px 0'; const featCheckbox = document.createElement('input'); featCheckbox.type='checkbox'; featCheckbox.style.marginRight='8px'; featCheckbox.checked = !!current.featured; featuredIn.appendChild(featCheckbox); featuredIn.appendChild(document.createTextNode('Destacar evento'));
+
       const descIn = document.createElement('textarea'); descIn.className='inline-textarea'; descIn.placeholder='Descrição'; descIn.value = current.description||'';
-      card.appendChild(titleIn); const row = document.createElement('div'); row.className='field-row'; row.appendChild(dateIn); row.appendChild(locIn); card.appendChild(row); card.appendChild(descIn);
+
+      // file reader: when user selects a file, convert to dataURL and store in imgIn.value
+      fileIn.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        if (!f.type.startsWith('image/')) { alert('Selecione um arquivo de imagem válido.'); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          imgIn.value = reader.result; // data URL
+          preview.src = reader.result; preview.style.display = 'block';
+        };
+        reader.readAsDataURL(f);
+      });
+
+      // remove image button
+      const removeImgBtn = document.createElement('button'); removeImgBtn.className = 'edit-btn'; removeImgBtn.textContent = 'Remover imagem'; removeImgBtn.style.marginLeft = '8px';
+      removeImgBtn.addEventListener('click', (ev) => { ev.preventDefault(); imgIn.value = ''; preview.src = ''; preview.style.display = 'none'; fileIn.value = null; });
+
+      card.appendChild(titleIn);
+      const row = document.createElement('div'); row.className='field-row'; row.appendChild(dateIn); row.appendChild(locIn); card.appendChild(row);
+      card.appendChild(imgIn);
+      card.appendChild(fileIn);
+      card.appendChild(preview);
+      card.appendChild(removeImgBtn);
+      card.appendChild(featuredIn);
+      card.appendChild(descIn);
+
       const actions = document.createElement('div'); actions.className='inline-actions';
       const saveBtn = document.createElement('button'); saveBtn.className='edit-btn primary'; saveBtn.textContent='Salvar';
       const cancelBtn = document.createElement('button'); cancelBtn.className='edit-btn'; cancelBtn.textContent='Cancelar';
       saveBtn.addEventListener('click', ()=>{
         if (!titleIn.value.trim() || !dateIn.value.trim()) { alert('Título e data são obrigatórios.'); return; }
-        events[idx] = { title: titleIn.value.trim(), date: dateIn.value.trim(), location: locIn.value.trim(), description: descIn.value.trim() };
+        // warn if image is large? we just save the data URL
+        events[idx] = { title: titleIn.value.trim(), date: dateIn.value.trim(), location: locIn.value.trim(), description: descIn.value.trim(), image: imgIn.value.trim(), featured: !!featCheckbox.checked, category: current.category||'' };
         saveEventsToStorage(events); renderEvents();
       });
       cancelBtn.addEventListener('click', ()=>renderEvents());
