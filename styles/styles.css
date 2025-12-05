@@ -503,6 +503,57 @@ nav a {
 .contact-card, .event-card { padding:12px; border-radius:8px; border:1px solid #f0f3f0; background:#fbfffb; margin-bottom:10px; }
 .event-meta { color:#4b6b63; font-size:14px; margin-bottom:6px; }
 
+/* event card layout with thumbnail */
+.event-card { display:flex; gap:12px; align-items:flex-start; }
+.event-card .event-thumb { width: 220px; height: 140px; object-fit: cover; border-radius: 8px; flex: 0 0 220px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+.event-card .event-body { flex:1; }
+.event-card h3 { margin: 0 0 6px 0; color: #0b3e34; }
+
+/* Grid layout for non-featured events */
+.events-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 12px; }
+.events-grid .event-card { display: block; border-radius: 12px; overflow: hidden; padding: 0; background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,0.06); position: relative; }
+.events-grid .event-card .event-thumb { width: 100%; height: 200px; flex: none; display:block; border-radius: 12px 12px 0 0; object-fit: cover; }
+/* ensure card content sits below the image (override global .card-content used elsewhere) */
+.events-grid .event-card .card-content { position: static !important; display: block; background: #ffffff; padding: 12px 14px; margin: 0; border-radius: 0 0 12px 12px; box-shadow: none; transform: none !important; }
+/* small gap between image and content when needed */
+.events-grid .event-card .card-content { margin-top: 0; }
+
+/* reduce excessive overlay-like opacity (in case some rules leak) */
+.events-grid .event-card .card-content[style], .events-grid .event-card .card-content{ background-color: #ffffff; }
+.events-grid .event-card .card-content h3 { margin: 8px 0 6px 0; font-size: 20px; color: #0b3e34; font-weight:700; }
+.events-grid .event-card .badge { position: absolute; left: 16px; top: 16px; background: var(--accent); color: #fff; padding: 8px 12px; border-radius: 6px; font-weight: 700; z-index: 6; box-shadow: 0 6px 16px rgba(15,107,90,0.16); }
+.events-grid .event-card .badge { pointer-events: none; }
+.meta-row { display:flex; gap:12px; align-items:center; color:#4b6b63; font-size:14px; margin-top:8px; }
+.meta-row .meta-item { display:inline-flex; align-items:center; gap:8px; }
+.meta-row svg { display:block; width:18px; height:18px; fill: #0f6b5a; }
+.meta-item.meta-date { color: #0f6b5a; font-weight:600; }
+.meta-item.meta-loc { color: #0f6b5a; }
+.meta-desc { margin-top:10px; color:#425c53; line-height:1.6; }
+
+/* admin action buttons inside content: smaller and inline */
+.events-grid .event-card .inline-actions { margin-top: 12px; }
+.events-grid .event-card .inline-actions .edit-btn { padding:6px 8px; border-radius:6px; }
+
+/* when no image is present, the badge should be inline above title */
+.events-grid .event-card .badge-inline { position: static; display: inline-block; margin-bottom: 6px; background: var(--accent); color: #fff; padding:6px 10px; border-radius:6px; box-shadow:none; }
+.events-grid .event-card .card-content .badge-inline { margin-left: 0; }
+
+@media (max-width: 920px) {
+  .events-grid { grid-template-columns: 1fr; }
+}
+
+/* filter bar visual improvements */
+.filter-bar { background: rgba(15,107,90,0.04); padding:10px 12px; border-radius:10px; align-items:center; }
+.filter-label { display:flex; align-items:center; gap:8px; padding-right:8px; margin-right:6px; border-right:1px solid rgba(0,0,0,0.06); }
+.filter-label svg { color: var(--accent); }
+.filter-bar .filter-select, .filter-bar .filter-date { min-width:160px; }
+
+@media (max-width: 760px) {
+  .event-card { flex-direction: column; }
+  .event-card .event-thumb { width:100%; height:200px; flex:unset; }
+  .filter-bar .filter-select, .filter-bar .filter-date { min-width:120px; }
+}
+
 /* ===== Events hero with decorative background (uses src/BackgroundPlantas.jpg) ===== */
 .events-hero {
   background-image: url("../src/BackgroundPlantas.jpg");
@@ -569,7 +620,20 @@ nav a {
 .inline-input { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; }
 .inline-textarea { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; min-height:72px; }
 .card-editing { border:1px dashed #cfeadf; background: #fffefc; }
+/* quando um cartão de evento entra em modo de edição, sobrescreve o layout de "event-card" (flex row)
+  para empilhar campos verticalmente e permitir redimensionamento responsivo */
+.event-card.card-editing { display: block; }
+.event-card.card-editing .field-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.event-card.card-editing .field-row > * { flex: 1 1 220px; min-width: 140px; }
+.event-card.card-editing .inline-actions { margin-top: 12px; display: flex; gap: 8px; }
+.event-card.card-editing .img-preview { width: 220px; height: 140px; object-fit: cover; }
 .small-muted { font-size:13px; color:#6b8a7f; }
 
 /* editor image preview */
 .img-preview { display:block; width:100%; height:120px; object-fit:cover; border-radius:8px; margin:8px 0; border:1px solid #e6efe8; }
+
+/* filter bar styles */
+.filter-bar { display:flex; gap:10px; align-items:center; margin:12px 0 18px 0; flex-wrap:wrap; }
+.filter-bar .filter-select { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e6; background:#fff; }
+.filter-bar .filter-date { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e6; }
+.filter-bar .edit-btn { margin-left:6px; }

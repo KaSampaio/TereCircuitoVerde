@@ -1,5 +1,6 @@
 // Carrega conteúdo editável salvo em localStorage para as páginas públicas
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[content-load] DOMContentLoaded');
   function getAuth() {
     try { const raw = localStorage.getItem('tv_auth'); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
   }
@@ -10,6 +11,34 @@ document.addEventListener('DOMContentLoaded', () => {
   function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+  function normalizeText(s) {
+    if (!s) return '';
+    try {
+      return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    } catch (e) { return String(s).toLowerCase().trim(); }
+  }
+  function parseDateFromString(s) {
+    if (!s) return null;
+    try {
+      const str = String(s).trim();
+      // if format YYYY-MM-DD
+      const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (isoMatch) return new Date(str);
+      // if format dd/mm/yyyy
+      const dm = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dm) {
+        const dd = parseInt(dm[1],10), mm = parseInt(dm[2],10)-1, yy = parseInt(dm[3],10);
+        return new Date(yy, mm, dd);
+      }
+      // if it's a range like 'dd/mm/yyyy — dd/mm/yyyy' take the first
+      if (str.indexOf('—') !== -1) {
+        return parseDateFromString(str.split('—')[0].trim());
+      }
+      // fallback to Date parse
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? null : d;
+    } catch (e) { return null; }
   }
 
   function saveContactsToStorage(arr) {
@@ -23,7 +52,22 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveEventsToStorage(arr) {
     try {
       localStorage.setItem('events', JSON.stringify(arr));
-      const html = arr.map(ev => `<div class=\"event-card\">${ev.image?`<img src=\"${escapeHtml(ev.image)}\"/>`:''}<h3>${escapeHtml(ev.title||'')}</h3><div class=\"event-meta\">${escapeHtml(ev.date||'')}${ev.location? ' — '+escapeHtml(ev.location):''}</div><p>${escapeHtml(ev.description||'')}</p></div>`).join('\n');
+      // include structured data as data-attributes so parser can restore fields
+      const html = arr.map(ev => {
+        const attrs = [];
+        if (ev.start) attrs.push(`data-start=\"${escapeHtml(ev.start)}\"`);
+        if (ev.end) attrs.push(`data-end=\"${escapeHtml(ev.end)}\"`);
+        if (ev.park) attrs.push(`data-park=\"${escapeHtml(ev.park)}\"`);
+        if (ev.category) attrs.push(`data-category=\"${escapeHtml(ev.category)}\"`);
+        if (ev.location) attrs.push(`data-location=\"${escapeHtml(ev.location)}\"`);
+          if (typeof ev.featured !== 'undefined') attrs.push(`data-featured=\"${escapeHtml(String(ev.featured))}\"`);
+        const metaParts = [];
+        if (ev.start) metaParts.push(escapeHtml(ev.start));
+        if (ev.end) metaParts.push(escapeHtml(ev.end));
+        if (ev.location) metaParts.push(escapeHtml(ev.location));
+        const meta = metaParts.join(' — ');
+        return `<div class=\"event-card\" ${attrs.join(' ')}>${ev.image?`<img src=\"${escapeHtml(ev.image)}\"/>`:''}<h3>${escapeHtml(ev.title||'')}</h3><div class=\"event-meta\">${meta}</div><p>${escapeHtml(ev.description||'')}</p></div>`;
+      }).join('\n');
       localStorage.setItem('events_html', html);
     } catch (e) { /* ignore */ }
   }
@@ -64,15 +108,26 @@ document.addEventListener('DOMContentLoaded', () => {
           const titleEl = n.querySelector('h3');
           const metaEl = n.querySelector('.event-meta');
           const descEl = n.querySelector('p');
-          let date = '';
-          let location = '';
+          // prefer explicit data-attributes if present
+          const start = n.dataset.start || '';
+          const end = n.dataset.end || '';
+          const park = n.dataset.park || '';
+          const category = n.dataset.category || '';
+          const location = n.dataset.location || '';
+            // try to read image src if present in fallback HTML
+            const imgEl = n.querySelector('img');
+            const image = imgEl ? (imgEl.getAttribute('src') || '') : '';
+            // try to read featured flag if present
+            const featuredRaw = (typeof n.dataset.featured !== 'undefined') ? String(n.dataset.featured) : undefined;
+            const featured = (typeof featuredRaw === 'undefined') ? undefined : (featuredRaw === 'true' || featuredRaw === '1');
+            // fallback to parsing visible meta text
+          let dateDisplay = '';
           if (metaEl) {
             const txt = metaEl.textContent || '';
             const parts = txt.split('—').map(s=>s.trim());
-            date = parts[0] || '';
-            location = parts[1] || '';
+            if (!start && parts[0]) dateDisplay = parts[0] || '';
           }
-          parsed.push({ title: titleEl?titleEl.textContent.trim(): '', date, location, description: descEl?descEl.textContent.trim(): '' });
+          parsed.push({ title: titleEl?titleEl.textContent.trim(): '', date: dateDisplay, start, end, park, category, location, image, featured, description: descEl?descEl.textContent.trim(): '' });
         });
       }
       return parsed;
@@ -170,20 +225,120 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fallback) events = parseEventsHtml(fallback);
     }
 
+    // local filter state to avoid race when recreating DOM controls
+    let filterState = { park: 'all', category: 'all', start: '', end: '' };
+
     function renderEvents() {
+      console.log('[content-load] renderEvents start, events length=', events.length);
       eventsEl.innerHTML = '';
+      // ensure filter container exists (we just cleared eventsEl so recreate/reattach)
+      let filterBarEl = document.getElementById('filter-bar');
+      if (!filterBarEl) {
+        filterBarEl = document.createElement('div');
+        filterBarEl.id = 'filter-bar';
+        filterBarEl.className = 'filter-bar';
+        eventsEl.appendChild(filterBarEl);
+      } else {
+        if (!eventsEl.contains(filterBarEl)) eventsEl.appendChild(filterBarEl);
+      }
+      // read filter values from state (updated by control events)
+      const parkVal = filterState.park || 'all';
+      const catVal = filterState.category || 'all';
+      const startVal = filterState.start || '';
+      const endVal = filterState.end || '';
+        function buildFilterControls() {
+          console.log('[content-load] buildFilterControls, filterBarEl=', !!filterBarEl);
+          if (!filterBarEl) return;
+          filterBarEl.innerHTML = '';
+          const parks = Array.from(new Set(events.map(e => (e.park || e.location || '').trim()).filter(Boolean)));
+          const existingCats = Array.from(new Set(events.map(e => (e.category || '').trim()).filter(Boolean)));
+          const defaultCats = ['Cultura','Trilha','Esporte','Lazer'];
+          const cats = defaultCats.concat(existingCats.filter(c=>!defaultCats.includes(c)));
+
+          // label + icon
+          const label = document.createElement('div'); label.className = 'filter-label';
+          label.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden><path d="M10 18h4v-2h-4v2zm-7-7h18v-2H3v2zm3-7v2h12V4H6z" fill="currentColor"/></svg><span style="margin-left:8px;font-weight:700;color:var(--texto);">Filtrar</span>';
+
+          const parkSelect = document.createElement('select'); parkSelect.id = 'filter-park'; parkSelect.className='filter-select';
+          const optAll = document.createElement('option'); optAll.value='all'; optAll.textContent='Parque'; parkSelect.appendChild(optAll);
+          parks.forEach(p => { const o = document.createElement('option'); o.value = p; o.textContent = p; parkSelect.appendChild(o); });
+
+          const catSelect = document.createElement('select'); catSelect.id='filter-cat'; catSelect.className='filter-select';
+          const oAll = document.createElement('option'); oAll.value='all'; oAll.textContent='Categorias'; catSelect.appendChild(oAll);
+          cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSelect.appendChild(o); });
+
+          const startInp = document.createElement('input'); startInp.type='date'; startInp.id='filter-start'; startInp.className='filter-date'; startInp.placeholder='Data início';
+          const endInp = document.createElement('input'); endInp.type='date'; endInp.id='filter-end'; endInp.className='filter-date'; endInp.placeholder='Data fim';
+          const clearBtn = document.createElement('button'); clearBtn.className='edit-btn'; clearBtn.textContent='Limpar filtros';
+
+          // set control values from state
+          if (parkVal) parkSelect.value = parkVal;
+          if (catVal) catSelect.value = catVal;
+          if (startVal) startInp.value = startVal;
+          if (endVal) endInp.value = endVal;
+
+          // when filters change, update state then re-render
+          parkSelect.addEventListener('change', (e) => { filterState.park = e.target.value || 'all'; renderEvents(); });
+          catSelect.addEventListener('change', (e) => { filterState.category = e.target.value || 'all'; renderEvents(); });
+          startInp.addEventListener('change', (e) => { filterState.start = e.target.value || ''; renderEvents(); });
+          endInp.addEventListener('change', (e) => { filterState.end = e.target.value || ''; renderEvents(); });
+          clearBtn.addEventListener('click', (e) => { e.preventDefault(); filterState = { park:'all', category:'all', start:'', end:'' }; renderEvents(); });
+
+          filterBarEl.appendChild(label);
+          console.log('[content-load] filter controls appended');
+          filterBarEl.appendChild(parkSelect);
+          filterBarEl.appendChild(catSelect);
+          filterBarEl.appendChild(startInp);
+          filterBarEl.appendChild(endInp);
+          filterBarEl.appendChild(clearBtn);
+        }
+        // initial build
+        buildFilterControls();
+
+      function passesFilter(ev) {
+        // park/location filter
+        if (parkVal && parkVal !== 'all') {
+          const loc = (ev.park || ev.location || '').trim();
+          const matchPark = loc && (normalizeText(loc) === normalizeText(parkVal));
+          console.log('[content-load] park filter:', { parkVal, evPark: loc, matchPark });
+          if (!matchPark) return false;
+        }
+        // category
+        if (catVal && catVal !== 'all') {
+          const evCat = (ev.category || '').trim();
+          const matchCat = evCat && (normalizeText(evCat) === normalizeText(catVal));
+          console.log('[content-load] cat filter:', { catVal, evCat, matchCat });
+          if (!matchCat) return false;
+        }
+        // date range
+        if (startVal) {
+          const dEv = parseDateFromString(ev.start || ev.date);
+          const dStart = new Date(startVal);
+          if (!dEv || dEv < dStart) return false;
+        }
+        if (endVal) {
+          const dEv = parseDateFromString(ev.start || ev.date);
+          const dEnd = new Date(endVal);
+          // include the end date whole day
+          if (!dEv || dEv > new Date(dEnd.getFullYear(), dEnd.getMonth(), dEnd.getDate(), 23,59,59)) return false;
+        }
+        return true;
+      }
       // render featured area if present
       if (featuredEl) {
         featuredEl.innerHTML = '';
-        // prefer events explicitly marked as featured; fallback to first 3
-        let featured = events.filter(e => e.featured);
-        if (!featured.length) featured = events.slice(0,3);
+        // apply filters to decide which events are considered for featured
+        const candidates = events.map((ev, i) => ({ ev, i })).filter(o => passesFilter(o.ev));
+        // prefer events explicitly marked as featured among the filtered set; fallback to first 3 filtered
+        // show only explicitly featured events (no fallback to first items)
+        let featured = candidates.filter(o => {
+          const f = o.ev.featured;
+          if (typeof f === 'string') return (normalizeText(f) === 'true' || f === '1');
+          return !!f;
+        }).map(o => o.ev);
         featured.slice(0,3).forEach((ev) => {
           const card = document.createElement('div'); card.className = 'featured-card';
-          // if event has an image, render it behind content
-          if (ev.image) {
-            const img = document.createElement('img'); img.src = ev.image; img.alt = ev.title || 'Imagem'; card.appendChild(img);
-          }
+          if (ev.image) { const img = document.createElement('img'); img.src = ev.image; img.alt = ev.title || 'Imagem'; card.appendChild(img); }
           const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = ev.category || 'Evento';
           const datePill = document.createElement('div'); datePill.className = 'date-pill'; datePill.textContent = ev.date || '';
           const title = document.createElement('div'); title.className = 'title'; title.textContent = ev.title || '';
@@ -201,41 +356,77 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isAdmin) {
         const bar = document.createElement('div'); bar.className = 'edit-bar';
         const addBtn = document.createElement('button'); addBtn.className = 'edit-btn primary'; addBtn.textContent = 'Adicionar Evento';
-        addBtn.addEventListener('click', () => { events.push({ title:'', date:'', location:'', description:'', image:'', featured:false, category:'' }); renderEvents(); startEditEvent(events.length-1); });
+        addBtn.addEventListener('click', () => { events.push({ title:'', date:'', start:'', end:'', location:'', park:'', description:'', image:'', featured:false, category:'' }); renderEvents(); startEditEvent(events.length-1); });
         const saveAll = document.createElement('button'); saveAll.className = 'edit-btn'; saveAll.textContent = 'Salvar Alterações';
         saveAll.addEventListener('click', () => { saveEventsToStorage(events); window.location.reload(); });
         bar.appendChild(addBtn); bar.appendChild(saveAll); eventsEl.appendChild(bar);
       }
 
-      if (!events.length) { const empty = document.createElement('div'); empty.className='small-muted'; empty.textContent='Nenhum evento cadastrado.'; eventsEl.appendChild(empty); return; }
+      // render only events that pass filters
+      const filtered = events.map((ev, i) => ({ ev, i })).filter(o => passesFilter(o.ev));
+      if (!filtered.length) { const empty = document.createElement('div'); empty.className='small-muted'; empty.textContent='Nenhum evento cadastrado.'; eventsEl.appendChild(empty); return; }
 
-      events.forEach((ev, idx) => {
-        const card = document.createElement('div'); card.className='event-card';
-        const title = document.createElement('h3'); title.textContent = ev.title || 'Evento'; card.appendChild(title);
-        const meta = document.createElement('div'); meta.className='event-meta'; meta.textContent = `${ev.date || ''}${ev.location ? ' — '+ev.location : ''}`; card.appendChild(meta);
-        if (ev.description) { const p = document.createElement('p'); p.textContent = ev.description; card.appendChild(p); }
+      // render events as a responsive grid (two columns on desktop)
+      const grid = document.createElement('div'); grid.className = 'events-grid';
+      filtered.forEach(({ ev, i: idx }) => {
+        const card = document.createElement('div'); card.className='event-card'; card.dataset.index = String(idx);
+        // image (full width)
+        if (ev.image) {
+          const img = document.createElement('img'); img.className = 'event-thumb'; img.src = ev.image; img.alt = ev.title || 'Imagem do evento'; card.appendChild(img);
+        }
+        // category badge (we append overlay badge only when there is an image;
+        // otherwise it will be inserted inline inside the content so it doesn't
+        // overlap the title)
+        const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = ev.category || 'Evento';
+
+        const content = document.createElement('div'); content.className = 'card-content';
+        const title = document.createElement('h3'); title.textContent = ev.title || 'Evento'; content.appendChild(title);
+
+        // place badge: overlay on the image when image exists, otherwise inline
+        if (ev.image) {
+          card.appendChild(badge);
+        } else {
+          badge.classList.add('badge-inline');
+          content.insertBefore(badge, title);
+        }
+
+        // meta row with calendar and location icons
+        const meta = document.createElement('div'); meta.className = 'meta-row';
+        const cal = document.createElement('span'); cal.className = 'meta-item meta-date';
+        cal.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden><path d="M7 10h5v5H7z" fill="currentColor" opacity="0.08"/><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 1.99 2H19c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" fill="currentColor"/></svg> ' + (ev.date || '');
+        const loc = document.createElement('span'); loc.className = 'meta-item meta-loc';
+        loc.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" fill="currentColor"/></svg> ' + (ev.location || '');
+        meta.appendChild(cal); meta.appendChild(loc);
+        content.appendChild(meta);
+
+        if (ev.description) { const p = document.createElement('p'); p.className='meta-desc'; p.textContent = ev.description; content.appendChild(p); }
 
         if (isAdmin) {
           const actions = document.createElement('div'); actions.className='inline-actions';
           const editBtn = document.createElement('button'); editBtn.className='edit-btn'; editBtn.textContent='Editar'; editBtn.addEventListener('click', ()=>startEditEvent(idx));
           const delBtn = document.createElement('button'); delBtn.className='edit-btn'; delBtn.textContent='Remover'; delBtn.addEventListener('click', ()=>{ events.splice(idx,1); saveEventsToStorage(events); renderEvents(); });
-          actions.appendChild(editBtn); actions.appendChild(delBtn); card.appendChild(actions);
+          actions.appendChild(editBtn); actions.appendChild(delBtn);
+          content.appendChild(actions);
         }
 
-        eventsEl.appendChild(card);
+        card.appendChild(content);
+        grid.appendChild(card);
       });
+      eventsEl.appendChild(grid);
     }
 
     function startEditEvent(idx) {
       const current = events[idx];
-      const cards = eventsEl.querySelectorAll('.event-card');
-      const card = cards[idx];
+      const card = eventsEl.querySelector(`.event-card[data-index="${idx}"]`);
       if (!card) return renderEvents();
       card.classList.add('card-editing');
       card.innerHTML = '';
       const titleIn = document.createElement('input'); titleIn.className='inline-input'; titleIn.placeholder='Título'; titleIn.value = current.title||'';
-      const dateIn = document.createElement('input'); dateIn.className='inline-input'; dateIn.placeholder='Data (dd/mm/aaaa)'; dateIn.value = current.date||'';
+      const startIn = document.createElement('input'); startIn.className='inline-input'; startIn.type='date'; startIn.placeholder='Data início'; startIn.value = current.start || current.date || '';
+      const endIn = document.createElement('input'); endIn.className='inline-input'; endIn.type='date'; endIn.placeholder='Data fim (opcional)'; endIn.value = current.end || '';
       const locIn = document.createElement('input'); locIn.className='inline-input'; locIn.placeholder='Local'; locIn.value = current.location||'';
+      const parkIn = document.createElement('input'); parkIn.className='inline-input'; parkIn.placeholder='Parque (ex: Serra dos Órgãos)'; parkIn.value = current.park||'';
+      const categoryIn = document.createElement('input'); categoryIn.className='inline-input'; categoryIn.placeholder='Categoria (ex: Trilha)'; categoryIn.value = current.category||'';
 
       // image URL input (kept for flexibility) and file upload input
       const imgIn = document.createElement('input'); imgIn.className='inline-input'; imgIn.placeholder='URL da imagem (opcional)'; imgIn.value = current.image||'';
@@ -266,7 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
       removeImgBtn.addEventListener('click', (ev) => { ev.preventDefault(); imgIn.value = ''; preview.src = ''; preview.style.display = 'none'; fileIn.value = null; });
 
       card.appendChild(titleIn);
-      const row = document.createElement('div'); row.className='field-row'; row.appendChild(dateIn); row.appendChild(locIn); card.appendChild(row);
+      const row = document.createElement('div'); row.className='field-row'; row.appendChild(startIn); row.appendChild(endIn); row.appendChild(locIn); card.appendChild(row);
+      const row2 = document.createElement('div'); row2.className='field-row'; row2.appendChild(parkIn); row2.appendChild(categoryIn); card.appendChild(row2);
       card.appendChild(imgIn);
       card.appendChild(fileIn);
       card.appendChild(preview);
@@ -278,15 +470,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const saveBtn = document.createElement('button'); saveBtn.className='edit-btn primary'; saveBtn.textContent='Salvar';
       const cancelBtn = document.createElement('button'); cancelBtn.className='edit-btn'; cancelBtn.textContent='Cancelar';
       saveBtn.addEventListener('click', ()=>{
-        if (!titleIn.value.trim() || !dateIn.value.trim()) { alert('Título e data são obrigatórios.'); return; }
-        // warn if image is large? we just save the data URL
-        events[idx] = { title: titleIn.value.trim(), date: dateIn.value.trim(), location: locIn.value.trim(), description: descIn.value.trim(), image: imgIn.value.trim(), featured: !!featCheckbox.checked, category: current.category||'' };
+        if (!titleIn.value.trim() || !startIn.value.trim()) { alert('Título e data de início são obrigatórios.'); return; }
+        // format a human-friendly date string
+        function fmt(d) { if (!d) return ''; try { const dt = new Date(d); return dt.toLocaleDateString('pt-BR'); } catch(e){ return d; } }
+        const displayDate = startIn.value ? (fmt(startIn.value) + (endIn.value ? ' — '+fmt(endIn.value) : '')) : (current.date||'');
+        events[idx] = {
+          title: titleIn.value.trim(),
+          date: displayDate,
+          start: startIn.value || '',
+          end: endIn.value || '',
+          location: locIn.value.trim(),
+          park: parkIn.value.trim(),
+          category: categoryIn.value.trim(),
+          description: descIn.value.trim(),
+          image: imgIn.value.trim(),
+          featured: !!featCheckbox.checked
+        };
         saveEventsToStorage(events); renderEvents();
       });
       cancelBtn.addEventListener('click', ()=>renderEvents());
       actions.appendChild(saveBtn); actions.appendChild(cancelBtn); card.appendChild(actions);
     }
 
-    renderEvents();
+    try {
+      renderEvents();
+    } catch (err) {
+      console.error('[content-load] renderEvents crashed:', err);
+    }
   }
 });
