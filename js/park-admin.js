@@ -7,34 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const auth = getAuth();
   if (!auth || auth.role !== 'admin') return;
 
-  // adiciona botões na área principal do parque
-  try {
-    const parkDetail = document.querySelector('.park_detail');
-    if (parkDetail) {
-      const h2 = parkDetail.querySelector('h2');
-      const actions = document.createElement('div');
-      actions.className = 'admin-park-actions';
-      const editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'edit-btn';
-      editBtn.textContent = 'Editar';
-      editBtn.addEventListener('click', () => { window.alert('Editar (área do parque) — implemente a ação de edição no admin se necessário.'); });
-      const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.className = 'edit-btn';
-      delBtn.textContent = 'Remover';
-      delBtn.addEventListener('click', () => {
-        if (!confirm('Remover este parque do site? Esta ação afeta apenas a visualização local.')) return;
-        // simples ocultação como placeholder para remoção real
-        parkDetail.style.display = 'none';
-      });
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
-      if (h2) h2.parentNode.insertBefore(actions, h2.nextSibling);
-      else parkDetail.insertBefore(actions, parkDetail.firstChild);
-    }
+  // mark page as admin-mode so CSS reveals admin controls
+  try { document.body.classList.add('admin-mode'); } catch (e) { /* ignore */ }
 
-    // adiciona botões para cada trilha (se existir)
+  // adiciona botões apenas para cada trilha (se existir)
+  try {
     const trailItems = document.querySelectorAll('.trail-item');
     trailItems.forEach(item => {
       const info = item.querySelector('.trail-info');

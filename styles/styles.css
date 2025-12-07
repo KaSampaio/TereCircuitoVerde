@@ -60,6 +60,24 @@ nav a {
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+/* Park hero/banner */
+.park-hero {
+  width: 100%;
+  height: 260px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.park-hero-inner { width: 100%; max-width: 1100px; padding: 0 18px; text-align: center; }
+.park-hero-title { background: rgba(255,255,255,0.9); color: var(--accent); display: inline-block; padding: 12px 22px; border-radius: 8px; font-size: 30px; font-weight:700; }
+
+@media (max-width: 760px) {
+  .park-hero { height: 180px; }
+  .park-hero-title { font-size: 22px; }
+}
+
 /* ===== Hero / Slider ===== */
 .hero {
   position: relative;
@@ -153,9 +171,10 @@ nav a {
   background: linear-gradient(180deg, rgba(250,250,250,0.9), rgba(245,245,245,0.95));
 }
 .park_detail h2 {
-  font-size: 28px;
-  margin: 0 0 18px 0;
-  color: #0b3e34;
+  font-size: 30px;
+  margin: 0 0 24px 0;
+  color: var(--accent);
+  text-align: center;
 }
 .park_inner {
   display: flex;
@@ -383,7 +402,7 @@ nav a {
 
 
 .park_detail h2 {
-  margin: 0;
+  margin: 0 0 24px 0;
   font-size: 30px;
   color: var(--accent);
   text-align: center;
@@ -618,6 +637,17 @@ nav a {
 .featured-actions { display:flex; gap:8px; position:absolute; right:10px; top:10px; }
 .featured-actions .edit-btn { margin-left: 6px; }
 .inline-input { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; }
+
+/* Admin controls are hidden by default and only shown when body has .admin-mode */
+.admin-park-actions,
+.admin-trail-actions,
+.admin-actions { display: none; }
+.admin-mode .admin-park-actions { display: block; margin: 12px 0; }
+.admin-mode .admin-trail-actions,
+.admin-mode .admin-actions { display: flex; gap:8px; }
+.admin-mode .admin-park-actions .edit-btn,
+.admin-mode .admin-trail-actions .edit-btn,
+.admin-mode .admin-actions .edit-btn { padding:6px 10px; }
 .inline-textarea { padding:8px; border-radius:6px; border:1px solid #e6e6e6; width:100%; min-height:72px; }
 .card-editing { border:1px dashed #cfeadf; background: #fffefc; }
 /* quando um cartão de evento entra em modo de edição, sobrescreve o layout de "event-card" (flex row)
