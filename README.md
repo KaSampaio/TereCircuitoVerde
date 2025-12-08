@@ -62,12 +62,13 @@ O MVP busca demonstrar a proposta inicial de uma plataforma digital voltada para
 
 ---
 
-## 🎤 Pitch Online
-**Assista ao pitch:**  
-➡ *[Insira aqui o link do vídeo do pitch]*
+## 🎤 Pitch
+
+➡ [Pitch_Projeto_Terê_Verde.pdf](./Pitch/Pitch_Projeto_Ter%C3%AA_Verde.pdf)
 
 O pitch aborda:
-- A problemática inicial  
-- A solução proposta  
-- Funcionalidades principais do MVP  
-- Demonstração da interface  
+- A contextualização do problema (dificuldade em encontrar informações confiáveis sobre trilhas em Teresópolis)  
+- A solução proposta pelo app **Terê Verde**  
+- As principais funcionalidades do MVP  
+- A demonstração da interface e fluxo principal do usuário  
+- Os próximos passos para evolução do projeto  
