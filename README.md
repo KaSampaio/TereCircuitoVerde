@@ -1,11 +1,11 @@
 # **Terê Circuito Verde – MVP Front-End**
 
 ## 👥 **Integrantes da Equipe**
-- **Breno Andrade Carvalho da Silva** – Matrícula: 6014942 
-- **Carlos Emmanoel Moraes Gonçalves** – Matrícula: 6014907 
-- **Kaio Sampaio de Souza** – Matrícula: 6015335 
-- **Thalys Paixão da Silva Bastos** – Matrícula: 6007568 
-- **Thayna de Oliveira Ferreira** – Matrícula: 6013292
+- **Breno Andrade Carvalho da Silva** – Matrícula: 6014942 - Função: Protótipos e Requisitos do Sistema
+- **Carlos Emmanoel Moraes Gonçalves** – Matrícula: 6014907 - Função: PITCH e apresentação
+- **Kaio Sampaio de Souza** – Matrícula: 6015335 - Função: Desenvolvimento 
+- **Thalys Paixão da Silva Bastos** – Matrícula: 6007568 - Função: PITCH e Apresentação
+- **Thayna de Oliveira Ferreira** – Matrícula: 6013292 - Função: Protótipos e Requisitos
 ---
 
 ## 🧩 **Situação-Problema Escolhida**
