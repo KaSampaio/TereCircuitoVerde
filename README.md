@@ -49,6 +49,8 @@ O MVP busca demonstrar a proposta inicial de uma plataforma digital voltada para
 4. Para executar sem servidor local:
    - Basta abrir o arquivo **index.html** diretamente no navegador.
 
+Ou acesse diretamente pelo GitHub Pages: 
+[Terê Circuito Verde](https://kasampaio.github.io/TereCircuitoVerde/)
 ---
 
 ## 📌 Informações Adicionais

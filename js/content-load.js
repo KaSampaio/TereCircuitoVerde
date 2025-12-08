@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const editBtn = document.createElement('button'); editBtn.className = 'edit-btn'; editBtn.textContent = 'Editar';
           editBtn.addEventListener('click', () => startEdit(idx));
           const delBtn = document.createElement('button'); delBtn.className = 'edit-btn'; delBtn.textContent = 'Remover';
-          delBtn.addEventListener('click', () => { contacts.splice(idx,1); saveContactsToStorage(contacts); renderContacts(); });
+          delBtn.addEventListener('click', () => { if (confirm('Deseja realmente excluir este contato?')) { contacts.splice(idx,1); saveContactsToStorage(contacts); renderContacts(); } });
           actions.appendChild(editBtn); actions.appendChild(delBtn); card.appendChild(actions);
         }
 
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const actions = document.createElement('div'); actions.className = 'featured-actions';
             const idx = events.indexOf(ev);
             const editBtn = document.createElement('button'); editBtn.className='edit-btn'; editBtn.textContent='Editar'; editBtn.addEventListener('click', () => startEditEvent(idx));
-            const delBtn = document.createElement('button'); delBtn.className='edit-btn'; delBtn.textContent='Remover'; delBtn.addEventListener('click', ()=>{ events.splice(idx,1); saveEventsToStorage(events); renderEvents(); });
+            const delBtn = document.createElement('button'); delBtn.className='edit-btn'; delBtn.textContent='Remover'; delBtn.addEventListener('click', ()=>{ if (confirm('Deseja realmente excluir este evento?')) { events.splice(idx,1); saveEventsToStorage(events); renderEvents(); } });
             actions.appendChild(editBtn); actions.appendChild(delBtn); card.appendChild(actions);
           }
           featuredEl.appendChild(card);
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isAdmin) {
           const actions = document.createElement('div'); actions.className='inline-actions';
           const editBtn = document.createElement('button'); editBtn.className='edit-btn'; editBtn.textContent='Editar'; editBtn.addEventListener('click', ()=>startEditEvent(idx));
-          const delBtn = document.createElement('button'); delBtn.className='edit-btn'; delBtn.textContent='Remover'; delBtn.addEventListener('click', ()=>{ events.splice(idx,1); saveEventsToStorage(events); renderEvents(); });
+          const delBtn = document.createElement('button'); delBtn.className='edit-btn'; delBtn.textContent='Remover'; delBtn.addEventListener('click', ()=>{ if (confirm('Deseja realmente excluir este evento?')) { events.splice(idx,1); saveEventsToStorage(events); renderEvents(); } });
           actions.appendChild(editBtn); actions.appendChild(delBtn);
           content.appendChild(actions);
         }
