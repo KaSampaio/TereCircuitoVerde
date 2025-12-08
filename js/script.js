@@ -95,6 +95,18 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
   let tIndex = 0;
   let tTimer = null;
 
+  // Verificar se é admin
+  function isAdmin() {
+    try {
+      const raw = localStorage.getItem('tv_auth');
+      if (!raw) return false;
+      const auth = JSON.parse(raw);
+      return auth && auth.role === 'admin';
+    } catch (e) {
+      return false;
+    }
+  }
+
   function renderTrail(i) {
     const item = items[i];
     const itemImg = item.querySelector('.trail-image img');
@@ -121,9 +133,23 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
     });
   }
 
-  function prev() { tIndex = (tIndex - 1 + items.length) % items.length; renderTrail(tIndex); resetTimerTrails(); }
-  function next() { tIndex = (tIndex + 1) % items.length; renderTrail(tIndex); resetTimerTrails(); }
-  function goTo(i) { tIndex = i; renderTrail(tIndex); resetTimerTrails(); }
+  function prev() { 
+    tIndex = (tIndex - 1 + items.length) % items.length; 
+    renderTrail(tIndex); 
+    if (!isAdmin()) resetTimerTrails();
+  }
+  
+  function next() { 
+    tIndex = (tIndex + 1) % items.length; 
+    renderTrail(tIndex); 
+    if (!isAdmin()) resetTimerTrails();
+  }
+  
+  function goTo(i) { 
+    tIndex = i; 
+    renderTrail(tIndex); 
+    if (!isAdmin()) resetTimerTrails();
+  }
 
   prevBtn.addEventListener('click', prev);
   nextBtn.addEventListener('click', next);
@@ -133,8 +159,9 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
     tTimer = setInterval(next, 6000);
   }
 
-  // teclado
+  // teclado - desabilita se for admin ou se estiver em campo de input
   window.addEventListener('keydown', (e) => {
+    if (isAdmin()) return;
     if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
     if (e.key === 'ArrowLeft') prev();
     if (e.key === 'ArrowRight') next();
@@ -143,5 +170,9 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
   // init
   createTrailDots();
   renderTrail(0);
-  resetTimerTrails();
+  
+  // Só inicia auto-play se não for admin
+  if (!isAdmin()) {
+    resetTimerTrails();
+  }
 })();
