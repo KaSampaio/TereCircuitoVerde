@@ -84,7 +84,7 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
 
 // ===== Trails Slider (seção de trilhas) - dados no HTML =====
 (function() {
-  const items = Array.from(document.querySelectorAll('.trails-data .trail-item'));
+  let items = Array.from(document.querySelectorAll('.trails-data .trail-item'));
   const imgEl = document.querySelector('.trail-image img');
   const infoEl = document.querySelector('.trail-info');
   const prevBtn = document.querySelector('.trails-arrow.left');
@@ -108,7 +108,17 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
   }
 
   function renderTrail(i) {
+    // Atualiza a lista de items antes de renderizar
+    items = Array.from(document.querySelectorAll('.trails-data .trail-item'));
+    
+    // Garante que o índice está dentro dos limites
+    if (i >= items.length) i = items.length - 1;
+    if (i < 0) i = 0;
+    tIndex = i;
+    
     const item = items[i];
+    if (!item) return;
+    
     const itemImg = item.querySelector('.trail-image img');
     const itemInfo = item.querySelector('.trail-info');
     if (itemImg) {
@@ -166,6 +176,17 @@ if (slides.length && titleEl && leftBtn && rightBtn && dotsContainer) {
     if (e.key === 'ArrowLeft') prev();
     if (e.key === 'ArrowRight') next();
   });
+
+  // Expor funções globais para o park-admin.js atualizar o slider
+  window.updateTrailsSlider = function(index) {
+    items = Array.from(document.querySelectorAll('.trails-data .trail-item'));
+    createTrailDots();
+    renderTrail(index !== undefined ? index : tIndex);
+  };
+  
+  window.getCurrentTrailIndex = function() {
+    return tIndex;
+  };
 
   // init
   createTrailDots();
